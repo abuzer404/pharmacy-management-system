@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, FC, useEffect } from 'react';
+import React, { useState, useMemo, FC, useEffect, useRef } from 'react';
 import { Product, Category, TaxRate } from '../data/mockData';
 
 export interface CartItem extends Product {
@@ -21,11 +21,26 @@ const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewB
 const MinusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" /></svg>
 const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
 
+const XMarkIcon: FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
 export const POS: FC<POSProps> = ({ products: allProducts, categories, taxRates, onCompleteSale }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedTaxRate, setSelectedTaxRate] = useState<TaxRate>(taxRates[0] || { id: 0, name: 'No Tax Available', rate: 0});
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
+    const [lastSale, setLastSale] = useState<{
+        items: CartItem[];
+        subtotal: number;
+        tax: number;
+        total: number;
+        taxRate: TaxRate;
+    } | null>(null);
+    const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // If the currently selected tax rate is no longer in the list (e.g., it was deleted),
@@ -102,6 +117,15 @@ export const POS: FC<POSProps> = ({ products: allProducts, categories, taxRates,
             return;
         }
         if (onCompleteSale(cart, selectedTaxRate)) {
+            // Save sale info for receipt
+            setLastSale({
+                items: cart,
+                subtotal,
+                tax,
+                total,
+                taxRate: selectedTaxRate
+            });
+            setSuccessModalOpen(true);
             clearCart();
         }
     }
@@ -115,6 +139,7 @@ export const POS: FC<POSProps> = ({ products: allProducts, categories, taxRates,
     };
 
     return (
+        <>
         <div className="pos-container">
             <div className="pos-products content-card">
                 <div className="pos-products-header">
@@ -207,5 +232,83 @@ export const POS: FC<POSProps> = ({ products: allProducts, categories, taxRates,
                 )}
             </div>
         </div>
+        {successModalOpen && lastSale && (
+            <div className="modal-overlay" onClick={() => setSuccessModalOpen(false)}>
+                <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth: 400}}>
+                    <div className="modal-header">
+                        <h2>Sale Successful</h2>
+                        <button className="modal-close-btn" onClick={() => setSuccessModalOpen(false)}><XMarkIcon /></button>
+                    </div>
+                    <div className="modal-body">
+                        <div style={{textAlign: 'center', marginBottom: '1rem'}}>
+                            <span style={{fontSize: '2.5rem', color: 'var(--primary-color)'}}>&#10003;</span>
+                            <h3 style={{margin: '1rem 0 0.5rem'}}>Thank you for your purchase!</h3>
+                            <p style={{color: 'var(--text-color-secondary)'}}>The sale was completed successfully.</p>
+                        </div>
+                        <div ref={receiptRef} style={{background: 'rgba(0,0,0,0.03)', borderRadius: 8, padding: '1rem', marginBottom: '1rem'}}>
+                            <div style={{textAlign: 'center', marginBottom: 8}}>
+                                <span style={{fontWeight: 700, fontSize: '1.2rem', letterSpacing: 1}}>Khalid Pharmacy</span><br/>
+                                <span style={{fontSize: '0.95rem', color: 'var(--text-color-secondary)'}}>Receipt</span>
+                            </div>
+                            <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+                                {lastSale.items.map(item => (
+                                    <li key={item.id} style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: 4}}>
+                                        <span>{item.name} x {item.quantity}</span>
+                                        <span>Birr {(item.price * item.quantity).toFixed(2)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <hr style={{margin: '0.5rem 0'}} />
+                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem'}}>
+                                <span>Subtotal</span>
+                                <span>Birr {lastSale.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem'}}>
+                                <span>Tax ({(lastSale.taxRate.rate * 100).toFixed(1)}%)</span>
+                                <span>Birr {lastSale.tax.toFixed(2)}</span>
+                            </div>
+                            <div style={{display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '1.05rem', marginTop: 6}}>
+                                <span>Total</span>
+                                <span>Birr {lastSale.total.toFixed(2)}</span>
+                            </div>
+                            <div style={{marginTop: 16, textAlign: 'center', fontSize: '0.98rem', color: 'var(--primary-color)', fontWeight: 500}}>
+                                Thank you for purchasing from Khalid Pharmacy!
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-footer" style={{justifyContent: 'center'}}>
+                        <button className="btn" onClick={() => {
+                            // Print only the receipt
+                            if (receiptRef.current) {
+                                const printContents = receiptRef.current.innerHTML;
+                                const printWindow = window.open('', '', 'width=400,height=600');
+                                if (printWindow) {
+                                    printWindow.document.write(`
+                                        <html><head><title>Receipt</title>
+                                        <style>
+                                            body { font-family: 'Inter', sans-serif; color: #222; background: #fff; margin: 0; padding: 1rem; }
+                                            h4 { margin-bottom: 8px; }
+                                            ul { list-style: none; padding: 0; margin: 0; }
+                                            li { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 4px; }
+                                            hr { margin: 0.5rem 0; }
+                                            div { display: flex; justify-content: space-between; font-size: 0.95rem; }
+                                            .total { font-weight: 600; font-size: 1.05rem; margin-top: 6px; }
+                                            .receipt-header { text-align: center; margin-bottom: 8px; font-weight: 700; font-size: 1.2rem; letter-spacing: 1px; }
+                                            .receipt-footer { margin-top: 16px; text-align: center; font-size: 0.98rem; color: #00A99D; font-weight: 500; }
+                                        </style>
+                                        </head><body>` + printContents + `</body></html>`);
+                                    printWindow.document.close();
+                                    printWindow.focus();
+                                    printWindow.print();
+                                    printWindow.close();
+                                }
+                            }
+                        }}>Print Receipt</button>
+                        <button className="btn btn-secondary" onClick={() => setSuccessModalOpen(false)}>Close</button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
