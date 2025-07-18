@@ -969,3 +969,28 @@ html, body {
       grid-template-columns: 1fr;
   }
 }
+
+/* Responsive: Hide chevron toggle and collapsed sidebar on mobile */
+@media (max-width: 768px) {
+  .sidebar-chevron-toggle {
+    display: none !important;
+  }
+  .sidebar.collapsed {
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+  }
+  .sidebar.collapsed .logo-text,
+  .sidebar.collapsed .nav-text {
+    opacity: 1;
+    width: auto;
+    pointer-events: auto;
+  }
+  .sidebar.collapsed .sidebar-header {
+    justify-content: flex-start;
+  }
+  .sidebar.collapsed .nav-item {
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+}

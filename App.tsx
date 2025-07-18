@@ -49,7 +49,17 @@ const icons = {
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
     </svg>
-  )
+  ),
+  chevronLeft: (props: SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+  ),
+  chevronRight: (props: SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    </svg>
+  ),
 };
 
 type NavItemType = {
@@ -73,6 +83,8 @@ export const App = () => {
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  // Sidebar width state
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Centralized state
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -268,14 +280,40 @@ export const App = () => {
 
   return (
     <>
+      {/* Persistent chevron toggle, always visible on the left edge */}
+      <button
+        className="sidebar-chevron-toggle"
+        onClick={() => setSidebarCollapsed((prev) => !prev)}
+        aria-label="Toggle sidebar"
+        style={{
+          position: 'fixed',
+          top: 24,
+          left: isSidebarCollapsed ? 0 : 'var(--sidebar-width)',
+          zIndex: 1100,
+          background: 'var(--glass-bg)',
+          border: '1px solid var(--glass-border)',
+          borderRadius: '0 8px 8px 0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          padding: 4,
+          transition: 'left 0.3s',
+          width: 36,
+          height: 48,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+        }}
+      >
+        {isSidebarCollapsed ? <icons.chevronRight style={{ width: 28, height: 28 }} /> : <icons.chevronLeft style={{ width: 28, height: 28 }} />}
+      </button>
       <div className="app-container">
         <button className="menu-toggle" onClick={() => setSidebarOpen(!isSidebarOpen)} aria-label="Toggle menu">
           <icons.menu />
         </button>
-        <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`} aria-label="Main Navigation">
+        <aside className={`sidebar${isSidebarCollapsed ? ' collapsed' : ''}${isSidebarOpen ? ' open' : ''}`} aria-label="Main Navigation">
           <div className="sidebar-header">
             <LogoIcon className="logo-icon" />
-            <span className="logo-text">PharmaSys</span>
+            {!isSidebarCollapsed && <span className="logo-text">PharmaSys</span>}
           </div>
           <nav>
             <ul className="nav-list">
@@ -284,13 +322,13 @@ export const App = () => {
                 return (
                   <li
                     key={item.name}
-                    className={`nav-item ${activePage === item.name ? 'active' : ''}`}
+                    className={`nav-item${activePage === item.name ? ' active' : ''}`}
                     onClick={() => handleNavClick(item.name)}
                     role="button"
                     aria-current={activePage === item.name ? 'page' : undefined}
                   >
                     <Icon />
-                    <span className="nav-text">{item.name}</span>
+                    {!isSidebarCollapsed && <span className="nav-text">{item.name}</span>}
                   </li>
                 );
               })}
