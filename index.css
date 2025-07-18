@@ -994,3 +994,11 @@ html, body {
     gap: 1rem;
   }
 }
+
+/* Force sidebar to collapse to thin bar when collapsed */
+.sidebar.collapsed {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  transition: width 0.3s ease;
+}
