@@ -1,0 +1,21 @@
+{
+  "short_name": "PharmaSys",
+  "name": "PharmaSys - Pharmacy Management System",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0d1117",
+  "background_color": "#0d1117",
+  "description": "A modern, PWA-based Pharmacy Management and POS System."
+}
